@@ -100,9 +100,9 @@ public class BoboLabel : MonoBehaviour
     private bool IsObjectVisible(GameObject obj)
     {
         Renderer renderer = obj.GetComponent<Renderer>();
-        if (renderer == null)
+        if (renderer == null || !obj.activeSelf)
         {
-            Debug.LogError("Renderer component not found on the object.");
+            Debug.LogWarning("Renderer component not found on the object or Gameobject is not enabled");
             return false;
         }
 
