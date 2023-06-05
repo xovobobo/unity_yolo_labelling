@@ -127,46 +127,57 @@ public class BoboLabel : MonoBehaviour
     }
     private Rect GetScreenRect(GameObject obj)
     {
-        MeshFilter meshFilter = obj.GetComponent<MeshFilter>();
-        if (meshFilter == null || meshFilter.sharedMesh == null)
+        MeshFilter[] meshFilters = obj.GetComponentsInChildren<MeshFilter>();
+
+        if (meshFilters.Length == 0)
         {
-            Debug.LogError("MeshFilter or sharedMesh missing on the object.");
+            Debug.LogError("MeshFilter or sharedMesh missing on the object or its children.");
             return Rect.zero;
         }
 
-        Mesh mesh = meshFilter.sharedMesh;
-        Vector3[] vertices = mesh.vertices;
-        Vector3[] transformedVertices = new Vector3[vertices.Length];
+        float left = float.MaxValue;
+        float right = float.MinValue;
+        float top = float.MaxValue;
+        float bottom = float.MinValue;
 
-        for (int i = 0; i < vertices.Length; i++)
+        foreach (MeshFilter meshFilter in meshFilters)
         {
-            transformedVertices[i] = obj.transform.TransformPoint(vertices[i]);
-        }
+            if (meshFilter.sharedMesh == null)
+            {
+                Debug.LogError("SharedMesh missing on the object.");
+                continue;
+            }
 
-        Vector2[] screenCorners = new Vector2[transformedVertices.Length];
-        for (int i = 0; i < transformedVertices.Length; i++)
-        {
-            screenCorners[i] = cam.WorldToScreenPoint(transformedVertices[i]);
-        }
+            Mesh mesh = meshFilter.sharedMesh;
+            Vector3[] vertices = mesh.vertices;
+            Vector3[] transformedVertices = new Vector3[vertices.Length];
 
-        float left = screenCorners[0].x;
-        float right = screenCorners[0].x;
-        float top = screenCorners[0].y;
-        float bottom = screenCorners[0].y;
+            for (int i = 0; i < vertices.Length; i++)
+            {
+                transformedVertices[i] = meshFilter.transform.TransformPoint(vertices[i]);
+            }
 
-        for (int i = 1; i < screenCorners.Length; i++)
-        {
-            if (screenCorners[i].x < left)
-                left = screenCorners[i].x;
-            if (screenCorners[i].x > right)
-                right = screenCorners[i].x;
-            if (screenCorners[i].y < top)
-                top = screenCorners[i].y;
-            if (screenCorners[i].y > bottom)
-                bottom = screenCorners[i].y;
+            Vector2[] screenCorners = new Vector2[transformedVertices.Length];
+            for (int i = 0; i < transformedVertices.Length; i++)
+            {
+                screenCorners[i] = cam.WorldToScreenPoint(transformedVertices[i]);
+            }
+
+            for (int i = 0; i < screenCorners.Length; i++)
+            {
+                if (screenCorners[i].x < left)
+                    left = screenCorners[i].x;
+                if (screenCorners[i].x > right)
+                    right = screenCorners[i].x;
+                if (screenCorners[i].y < top)
+                    top = screenCorners[i].y;
+                if (screenCorners[i].y > bottom)
+                    bottom = screenCorners[i].y;
+            }
         }
 
         return new Rect(left, top, right - left, bottom - top);
     }
+    
 }
 
