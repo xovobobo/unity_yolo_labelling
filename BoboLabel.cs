@@ -9,20 +9,19 @@ public class BoboLabel : MonoBehaviour
         public GameObject targetObject;
         public int classId;
     }
-    public int image_start_idx = 0;
+    public int imageStartIdx = 0;
     public LabeledObject[] labeledObjects;
     public string DatasetFolder;
     public bool captureButton = false;
     private Camera cam;
-    private bool screenshotsaved = false;
-
-    private string labelFolder => Path.Combine(DatasetFolder, "labels");
-    private string imagesFolder => Path.Combine(DatasetFolder, "images");
+    private bool _screenshotSaved = false;
+    private string _labelFolder => Path.Combine(DatasetFolder, "labels");
+    private string _imagesFolder => Path.Combine(DatasetFolder, "images");
 
     private void Start()
     {
         cam = GetComponent<Camera>();
-        foreach (string folder in new [] {labelFolder, imagesFolder})
+        foreach (string folder in new [] {_labelFolder, _imagesFolder})
         {
             if (!Directory.Exists(folder))
             {
@@ -42,7 +41,8 @@ public class BoboLabel : MonoBehaviour
 
     private void CaptureAndLabel()
     {
-        screenshotsaved = false;
+        _screenshotSaved = false;
+
         RenderTexture renderTexture = new RenderTexture(cam.pixelWidth, cam.pixelHeight, 24);
         cam.targetTexture = renderTexture;
         Texture2D screenshot = new Texture2D(cam.pixelWidth, cam.pixelHeight, TextureFormat.RGB24, false);
@@ -53,7 +53,7 @@ public class BoboLabel : MonoBehaviour
         cam.targetTexture = null;
         RenderTexture.active = null;
         Destroy(renderTexture);
-        string labelPath = Path.Combine(labelFolder, $"{image_start_idx}.txt");
+        string labelPath = Path.Combine(_labelFolder, $"{imageStartIdx}.txt");
 
         if (File.Exists(labelPath))
         {
@@ -72,28 +72,17 @@ public class BoboLabel : MonoBehaviour
             }
             else
             {
-                if (!screenshotsaved)
+                if (!_screenshotSaved)
                 {
-                    byte[] bytes = screenshot.EncodeToPNG();
-                    string imagePath = Path.Combine(imagesFolder, $"{image_start_idx}.png");
-                    File.WriteAllBytes(imagePath, bytes);
-                    Debug.Log("Saved image at: " + imagePath);
-                    screenshotsaved = true;
-                    image_start_idx++;
+                    string imagePath = Path.Combine(_imagesFolder, $"{imageStartIdx}.png");
+                    SaveScreenshot(screenshot, Path.Combine(_imagesFolder, $"{imageStartIdx}.png"));
+                    _screenshotSaved = true;
+                    imageStartIdx++;
                 }
             }
-
             string labelData = GetLabelData(targetObject, classId);
-
-            if (File.Exists(labelPath))
-            {
-                File.AppendAllText(labelPath, labelData + "\n");
-            }
-            else
-            {
-                File.WriteAllText(labelPath, labelData + "\n");
-            }
-            Debug.Log("Saved labeling data at: " + labelPath);            
+            SaveLabel(labelData, labelPath);
+     
         }
     }
 
@@ -108,6 +97,24 @@ public class BoboLabel : MonoBehaviour
 
         Plane[] frustumPlanes = GeometryUtility.CalculateFrustumPlanes(cam);
         return GeometryUtility.TestPlanesAABB(frustumPlanes, renderer.bounds);
+    }
+    private void SaveScreenshot(Texture2D screenshot, string path)
+    {
+        byte[] bytes = screenshot.EncodeToPNG();
+        File.WriteAllBytes(path, bytes);
+        Debug.Log("Saved image at: " + path);
+    }
+    private void SaveLabel(string labelData, string labelPath)
+    {
+        if (File.Exists(labelPath))
+        {
+            File.AppendAllText(labelPath, labelData + "\n");
+        }
+        else
+        {
+            File.WriteAllText(labelPath, labelData + "\n");
+        }
+        Debug.Log("Saved labeling data at: " + labelPath);       
     }
     private string GetLabelData(GameObject obj, int classId)
     {
