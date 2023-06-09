@@ -13,8 +13,12 @@ public class BoboLabel : MonoBehaviour
     public LabeledObject[] labeledObjects;
     public string DatasetFolder;
     public bool captureButton = false;
+    public bool CapWithTime = false;
+    public float delay = 0.5f;
+
     private Camera cam;
     private bool screenshotsaved = false;
+    private float timeSinceLastCall = 0.0f;
 
     private string labelFolder => Path.Combine(DatasetFolder, "labels");
     private string imagesFolder => Path.Combine(DatasetFolder, "images");
@@ -33,6 +37,14 @@ public class BoboLabel : MonoBehaviour
 
     private void Update()
     {
+        timeSinceLastCall += Time.deltaTime;
+
+        if (CapWithTime && timeSinceLastCall >= delay)
+        {
+            CaptureAndLabel();
+            timeSinceLastCall = 0.0f;
+
+        }
         if (Input.GetKeyDown(KeyCode.Space) || captureButton)
         {
             CaptureAndLabel();
